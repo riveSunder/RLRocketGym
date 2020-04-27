@@ -169,40 +169,6 @@
     </inertial>
   </link>
 
-  <joint name="body_gear0" type="continuous">
-    <parent link="body"/>
-    <child link="gear0"/>
-    <axis xyz="-1 0 0"/>
-    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
-    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
-    <joint_properties damping="1.0" friction="1.0"/>
-  </joint>
-
-  <joint name="body_gear1" type="continuous">
-    <parent link="body"/>
-    <child link="gear1"/>
-    <axis xyz="-1 0 0"/>
-    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
-    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
-    <joint_properties damping="1.0" friction="1.0"/>
-  </joint>
-
-  <joint name="body_gear2" type="continuous">
-    <parent link="body"/>
-    <child link="gear2"/>
-    <axis xyz="-1 0 0"/>
-    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
-    <joint_properties damping="1.0" friction="1.0"/>
-  </joint>
-
-  <joint name="body_gear3" type="continuous">
-    <parent link="body"/>
-    <child link="gear3"/>
-    <axis xyz="-1 0 0"/>
-    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
-    <joint_properties damping="1.0" friction="1.0"/>
-    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
-  </joint>
 
   <joint name="bell_body" type="revolute">
     <parent link="bell"/>
@@ -216,6 +182,41 @@
   <joint name="body_nose" type="fixed">
     <parent link="body"/>
     <child link="nosecone"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="body_gear0" type="fixed">
+    <parent link="body"/>
+    <child link="gear0"/>
+    <axis xyz="-1 0 0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <joint name="body_gear1" type="fixed">
+    <parent link="body"/>
+    <child link="gear1"/>
+    <axis xyz="-1 0 0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <joint name="body_gear2" type="fixed">
+    <parent link="body"/>
+    <child link="gear2"/>
+    <axis xyz="-1 0 0"/>
+    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <joint name="body_gear3" type="fixed">
+    <parent link="body"/>
+    <child link="gear3"/>
+    <axis xyz="-1 0 0"/>
+    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
+    <joint_properties damping="1.0" friction="1.0"/>
     <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
   </joint>
 
