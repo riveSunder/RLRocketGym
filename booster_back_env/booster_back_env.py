@@ -11,6 +11,8 @@ from gym.utils import seeding
 import pybullet as p
 import pybullet_data
 
+from agents import RandomAgent
+
 class BoosterBackEnv(gym.Env):
 
     def __init__(self, render=False):
@@ -23,6 +25,7 @@ class BoosterBackEnv(gym.Env):
         else:
             self.physicsClient = p.connect(p.DIRECT)
 
+        self.max_thrust = [200., 200., 1000.]
         # add search paths from pybullet for e.g. plane.urdf
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
@@ -38,7 +41,7 @@ class BoosterBackEnv(gym.Env):
 
         path = os.path.abspath(os.path.dirname(__file__))   
 
-        shift = [0.,0.,2.] #[np.random.randn()*10, np.random.randn()*10, .30 + np.random.random()*.20]
+        shift = [np.random.randn()*1.0, np.random.randn()*1.0, 10 + np.random.random()]
 
         orientation = p.getQuaternionFromEuler(\
                 [np.random.randn(1)*1e-1,np.random.randn(1)*1e-1,np.random.rand(1)*1e-1])
@@ -47,22 +50,20 @@ class BoosterBackEnv(gym.Env):
             orientation)
         #self.create_rocket()
 
-
-
-        self.fuel = 100.0
+        self.fuel = 1000.0
         self.kg_per_kN = 0.3 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
-        p.changeDynamics(self.bot_id,-1, mass = 3.0)
-        p.changeDynamics(self.bot_id, 2, mass = 1.0)
-        p.changeDynamics(self.bot_id, 1, mass = self.dry_weight + self.fuel)
+        p.changeDynamics(self.bot_id, -1, mass = 3.0)
+        p.changeDynamics(self.bot_id, 1, mass = 1.0)
+        p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
 
         # get rid of damping
-        num_links = 7
+        num_links = 11
         for ii in range(num_links):
             p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
-        p.changeDynamics(self.bot_id, 1, mass=self.fuel)
+        p.changeDynamics(self.bot_id, 0, mass=self.fuel)
         
 
-        # give the rocket a random push
+        # give the rocket a 
 
         p.applyExternalForce(self.bot_id, 1, np.random.randn(3),[0,0,0],flags=p.LINK_FRAME)
         obs = None
@@ -140,6 +141,8 @@ class BoosterBackEnv(gym.Env):
             p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
 
     def step(self, action):
+
+        action = [a * t for a, t in zip(action, self.max_thrust)]
         
         self.apply_thrust(action[2])
 
@@ -181,13 +184,16 @@ class BoosterBackEnv(gym.Env):
 if __name__ == "__main__":
 
     env = BoosterBackEnv(render=True)
-    env.reset()
+    epds = 10
 
-    done = False
-    while not done:
+    agent = RandomAgent()
 
-        action = [1 * np.random.randn(), 1. *np.random.randn(), 5.0] 
-        obs, reward, done, info = env.step(action)
-        time.sleep(0.001)
+    for epd in range(epds):
+        obs = env.reset()
+        done = False
+        while not done:
+
+            action = agent.get_action(obs)
+            obs, reward, done, info = env.step(action)
 
     import pdb; pdb.set_trace()
