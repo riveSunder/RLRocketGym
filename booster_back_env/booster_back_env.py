@@ -116,28 +116,28 @@ class BoosterBackEnv(gym.Env):
             thrust_x, thrust_y = 0., 0.
             
         if thrust_x > 0.:
-            p.changeVisualShape(self.bot_id, 6, rgbaColor=[\
-                    np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
-            p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
-        elif thrust_x < 0.:
             p.changeVisualShape(self.bot_id, 7, rgbaColor=[\
                     np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
             p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.0])
+        elif thrust_x < 0.:
+            p.changeVisualShape(self.bot_id, 6, rgbaColor=[\
+                    np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
+            p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
         else:
-            p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.])
-            p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.0])
+            p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.])
+            p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
 
         if thrust_y > 0:
-            p.changeVisualShape(self.bot_id, 8, rgbaColor=[\
-                    np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 +np.random.random()/2])
-            p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
-        elif thrust_y < 0.:
             p.changeVisualShape(self.bot_id, 9, rgbaColor=[\
+                    np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 +np.random.random()/2])
+            p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.0])
+        elif thrust_y < 0.:
+            p.changeVisualShape(self.bot_id, 8, rgbaColor=[\
                     np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
-            p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.0])
+            p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
         else:
-            p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.])
-            p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.0])
+            p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.])
+            p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
 
     def step(self, action):
         
