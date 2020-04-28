@@ -250,7 +250,7 @@
     </inertial>
   </link>
 
-  <joint name="bell_body" type="revolute">
+  <joint name="bell_body" type="fixed">
     <parent link="bell"/>
     <child link="body"/>
     <axis xyz="0 -1 0"/>

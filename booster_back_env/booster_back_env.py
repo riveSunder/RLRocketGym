@@ -61,7 +61,6 @@ class BoosterBackEnv(gym.Env):
         for ii in range(num_links):
             p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
         p.changeDynamics(self.bot_id, 0, mass=self.fuel)
-        
 
         # give the rocket a high incoming velocity 
 
@@ -153,8 +152,18 @@ class BoosterBackEnv(gym.Env):
         p.stepSimulation()
         
         velocity = p.getBaseVelocity(self.bot_id)
+        all_links = [num for num in range(11)]
+        link_states = p.getLinkStates(self.bot_id, all_links)
+        obs = []
+
+        for kk in range(len(all_links)):
+            obs.extend(link_states[kk][0])
+            obs.extend(link_states[kk][1])
+
+        obs.extend(velocity[0])
+        obs.extend(velocity[1])
         
-        obs, reward, info = None, 0.0, None
+        reward, info = 0.0, None
 
         done = False
 
@@ -170,7 +179,6 @@ class BoosterBackEnv(gym.Env):
             print("bell is down")
             done = True
             reward += 100.0
-
         
         if done:
             reward += self.fuel
