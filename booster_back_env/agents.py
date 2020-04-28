@@ -26,3 +26,17 @@ class RandomAgent(Agent):
         return [np.random.randn(),\
                 np.random.randn(),\
                 np.random.random()]
+
+class MaxThrustAgent(Agent):
+
+    def __init__(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def get_action(self, x):
+
+        return [0.0,\
+                0.0,\
+                1.0]

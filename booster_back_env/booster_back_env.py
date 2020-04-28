@@ -11,7 +11,7 @@ from gym.utils import seeding
 import pybullet as p
 import pybullet_data
 
-from agents import RandomAgent
+from agents import RandomAgent, MaxThrustAgent
 
 class BoosterBackEnv(gym.Env):
 
@@ -25,7 +25,7 @@ class BoosterBackEnv(gym.Env):
         else:
             self.physicsClient = p.connect(p.DIRECT)
 
-        self.max_thrust = [200., 200., 1000.]
+        self.max_thrust = [200., 200., 5000.]
         # add search paths from pybullet for e.g. plane.urdf
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
@@ -41,17 +41,17 @@ class BoosterBackEnv(gym.Env):
 
         path = os.path.abspath(os.path.dirname(__file__))   
 
-        shift = [np.random.randn()*1.0, np.random.randn()*1.0, 10 + np.random.random()]
+        shift = [np.random.randn()*1.0, np.random.randn()*1.0, 30 + np.random.random()]
 
         orientation = p.getQuaternionFromEuler(\
-                [np.random.randn(1)*1e-1,np.random.randn(1)*1e-1,np.random.rand(1)*1e-1])
+                [np.random.randn(1) / 3,np.random.randn(1) / 3, np.random.rand(1) / 3])
         self.bot_id = p.loadURDF(os.path.join(path, "booster.xml"),\
             shift,\
             orientation)
         #self.create_rocket()
 
-        self.fuel = 1000.0
-        self.kg_per_kN = 0.3 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
+        self.fuel = 100.0
+        self.kg_per_kN = 0.03 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
         p.changeDynamics(self.bot_id, -1, mass = 3.0)
         p.changeDynamics(self.bot_id, 1, mass = 1.0)
         p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
@@ -63,9 +63,11 @@ class BoosterBackEnv(gym.Env):
         p.changeDynamics(self.bot_id, 0, mass=self.fuel)
         
 
-        # give the rocket a 
+        # give the rocket a high incoming velocity 
 
-        p.applyExternalForce(self.bot_id, 1, np.random.randn(3),[0,0,0],flags=p.LINK_FRAME)
+        p.resetBaseVelocity(self.bot_id, linearVelocity=\
+                [np.random.randn(), np.random.randn(), -20 + np.random.randn()*1.0])
+        # p.applyExternalForce(self.bot_id, 1, np.random.randn(3),[0,0,0],flags=p.LINK_FRAME)
         obs = None
 
         return obs
@@ -146,14 +148,11 @@ class BoosterBackEnv(gym.Env):
         
         self.apply_thrust(action[2])
 
-
         self.apply_control_thrust(action[0], action[1])
 
         p.stepSimulation()
         
         velocity = p.getBaseVelocity(self.bot_id)
-        nosecone_state = p.getLinkState(self.bot_id, 4)
-        bell_nozzle_state = p.getLinkState(self.bot_id,0)
         
         obs, reward, info = None, 0.0, None
 
@@ -187,6 +186,7 @@ if __name__ == "__main__":
     epds = 10
 
     agent = RandomAgent()
+    agent = MaxThrustAgent()
 
     for epd in range(epds):
         obs = env.reset()
