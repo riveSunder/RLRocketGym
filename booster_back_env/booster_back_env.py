@@ -1,4 +1,3 @@
-
 import time
 import os
 
@@ -159,8 +158,8 @@ class BoosterBackEnv(gym.Env):
             p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
 
     def step(self, action):
-
-        action = [a * t for a, t in zip(action, self.max_thrust)]
+    
+        action = [action[mm] * t for mm, t in enumerate(self.max_thrust)]
         
         self.apply_thrust(action[2])
 
@@ -178,12 +177,12 @@ class BoosterBackEnv(gym.Env):
         nose_contact_points= p.getContactPoints(self.bot_id, self.plane_id, 1)
 
         if len(nose_contact_points) > 0:
-            print("nose ground collsion")
+            # print("nose ground collsion")
             done = True
             reward -= 300.0
             # nose cone is on the ground
         elif np.abs(np.mean(obs[-7:-4])) < 1e-4:
-            print("bell is down")
+            # print("bell is down")
             done = True
             reward += 100.0
         
