@@ -71,6 +71,16 @@ class LSTMAgent(Agent):
         self.init_network()
         self.reset()
 
+    def sample_parameters(self, pop_mean, covariance):
+
+        parameters = np.random.standard_normal(self.num_parameters)
+
+        parameters *= np.diag(covariance)
+
+        parameters += pop_mean
+
+        return parameters
+
     def init_network(self, pop_mean=None, covariance=None):
 
         if pop_mean is None:
@@ -78,7 +88,7 @@ class LSTMAgent(Agent):
         if covariance is None:
             covariance = np.eye(self.num_parameters)
         
-        parameters = np.random.multivariate_normal(pop_mean, covariance)
+        parameters = self.sample_parameters(pop_mean, covariance)
 
         dim_x2f = (self.obs_dim + self.cell_dim) * self.cell_dim
         dim_c2y = dim_x2f*4 + self.cell_dim * self.act_dim
@@ -214,7 +224,7 @@ class ESPopulation(Population):
         fitnesses = []
         for kk in range(self.population_size):
 
-            fitnesses.append(np.sum(self.get_episodes(agent_idx=kk, epds=epds)))
+            fitnesses.append(np.sum(self.get_episodes(agent_idx=kk, epds=epds))/epds)
 
         return fitnesses
 

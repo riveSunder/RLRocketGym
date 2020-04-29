@@ -18,6 +18,7 @@ class BoosterBackEnv(gym.Env):
         super(BoosterBackEnv, self).__init__()
         
         self.k_friction = 0.001
+        self.render = render
         # start physics client
         if render:
             self.physicsClient = p.connect(p.GUI)
@@ -108,13 +109,14 @@ class BoosterBackEnv(gym.Env):
         else:
             thrust = 0.0
         
-        # visual indicators of thrust
-        p.changeVisualShape(self.bot_id, -1, rgbaColor=[5e-4*thrust, 0.01, 0.01, 1.0])
-        if thrust:
-            p.changeVisualShape(self.bot_id, 10, rgbaColor=[\
-                    0.75 + 0.25*np.random.random(), 0.1, 0.0, 0.35 + np.random.random()/2])
-        else:
-            p.changeVisualShape(self.bot_id, 10, rgbaColor=[0.,0.,0.,0.])
+        if self.render:
+            # visual indicators of thrust
+            p.changeVisualShape(self.bot_id, -1, rgbaColor=[5e-4*thrust, 0.01, 0.01, 1.0])
+            if thrust:
+                p.changeVisualShape(self.bot_id, 10, rgbaColor=[\
+                        0.75 + 0.25*np.random.random(), 0.1, 0.0, 0.35 + np.random.random()/2])
+            else:
+                p.changeVisualShape(self.bot_id, 10, rgbaColor=[0.,0.,0.,0.])
 
     def apply_control_thrust(self, thrust_x, thrust_y):
         
@@ -133,29 +135,30 @@ class BoosterBackEnv(gym.Env):
         else: 
             thrust_x, thrust_y = 0., 0.
             
-        if thrust_x > 0.:
-            p.changeVisualShape(self.bot_id, 7, rgbaColor=[\
-                    np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
-            p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.0])
-        elif thrust_x < 0.:
-            p.changeVisualShape(self.bot_id, 6, rgbaColor=[\
-                    np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
-            p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
-        else:
-            p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.])
-            p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
+        if self.render:
+            if thrust_x > 0.:
+                p.changeVisualShape(self.bot_id, 7, rgbaColor=[\
+                        np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
+                p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.0])
+            elif thrust_x < 0.:
+                p.changeVisualShape(self.bot_id, 6, rgbaColor=[\
+                        np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
+                p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
+            else:
+                p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.])
+                p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
 
-        if thrust_y > 0:
-            p.changeVisualShape(self.bot_id, 9, rgbaColor=[\
-                    np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 +np.random.random()/2])
-            p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.0])
-        elif thrust_y < 0.:
-            p.changeVisualShape(self.bot_id, 8, rgbaColor=[\
-                    np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
-            p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
-        else:
-            p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.])
-            p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
+            if thrust_y > 0:
+                p.changeVisualShape(self.bot_id, 9, rgbaColor=[\
+                        np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 +np.random.random()/2])
+                p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.0])
+            elif thrust_y < 0.:
+                p.changeVisualShape(self.bot_id, 8, rgbaColor=[\
+                        np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
+                p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
+            else:
+                p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.])
+                p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
 
     def step(self, action):
     
@@ -169,7 +172,7 @@ class BoosterBackEnv(gym.Env):
         
         obs = self.get_obs()
 
-        reward, info = 0.0, None
+        reward, info = 1.0, None
 
         done = False
 
@@ -186,7 +189,7 @@ class BoosterBackEnv(gym.Env):
             done = True
             reward += 100.0
         
-        if done:
+        if done and len(nose_contact_points) == 0:
             reward += self.fuel
 
             
