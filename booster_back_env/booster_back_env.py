@@ -11,7 +11,7 @@ from gym.utils import seeding
 import pybullet as p
 import pybullet_data
 
-from agents import RandomAgent, MaxThrustAgent
+from agents import RandomAgent, MaxThrustAgent, LSTMAgent
 
 class BoosterBackEnv(gym.Env):
 
@@ -31,6 +31,24 @@ class BoosterBackEnv(gym.Env):
 
     def create_rocket(self, height=1.0, radius=1.):
         pass
+
+    def get_obs(self):
+
+        velocity = p.getBaseVelocity(self.bot_id)
+        all_links = [num for num in range(6)]
+        link_states = p.getLinkStates(self.bot_id, all_links)
+        obs = []
+
+        for kk in range(len(all_links)):
+            obs.extend(link_states[kk][0])
+            obs.extend(link_states[kk][1])
+
+        obs.extend(velocity[0])
+        obs.extend(velocity[1])
+
+        obs = np.array(obs)
+
+        return obs
 
     def reset(self):
         p.resetSimulation()
@@ -63,11 +81,10 @@ class BoosterBackEnv(gym.Env):
         p.changeDynamics(self.bot_id, 0, mass=self.fuel)
 
         # give the rocket a high incoming velocity 
-
         p.resetBaseVelocity(self.bot_id, linearVelocity=\
                 [np.random.randn(), np.random.randn(), -20 + np.random.randn()*1.0])
-        # p.applyExternalForce(self.bot_id, 1, np.random.randn(3),[0,0,0],flags=p.LINK_FRAME)
-        obs = None
+
+        obs = self.get_obs()
 
         return obs
 
@@ -151,18 +168,8 @@ class BoosterBackEnv(gym.Env):
 
         p.stepSimulation()
         
-        velocity = p.getBaseVelocity(self.bot_id)
-        all_links = [num for num in range(11)]
-        link_states = p.getLinkStates(self.bot_id, all_links)
-        obs = []
+        obs = self.get_obs()
 
-        for kk in range(len(all_links)):
-            obs.extend(link_states[kk][0])
-            obs.extend(link_states[kk][1])
-
-        obs.extend(velocity[0])
-        obs.extend(velocity[1])
-        
         reward, info = 0.0, None
 
         done = False
@@ -175,13 +182,14 @@ class BoosterBackEnv(gym.Env):
             done = True
             reward -= 300.0
             # nose cone is on the ground
-        elif np.abs(np.mean(velocity[0])) < 1e-4:
+        elif np.abs(np.mean(obs[-7:-4])) < 1e-4:
             print("bell is down")
             done = True
             reward += 100.0
         
         if done:
             reward += self.fuel
+
             
         return obs, reward, done, info
 
@@ -191,10 +199,10 @@ class BoosterBackEnv(gym.Env):
 if __name__ == "__main__":
 
     env = BoosterBackEnv(render=True)
-    epds = 10
+    epds = 4
 
-    agent = RandomAgent()
-    agent = MaxThrustAgent()
+    agent = LSTMAgent()
+    #agent = MaxThrustAgent()
 
     for epd in range(epds):
         obs = env.reset()
