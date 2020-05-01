@@ -28,6 +28,7 @@ class BoosterBackEnv(gym.Env):
         self.max_thrust = [200., 200., 5000.]
         # add search paths from pybullet for e.g. plane.urdf
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        self.max_steps = 1000
 
     def create_rocket(self, height=1.0, radius=1.):
         pass
@@ -51,11 +52,13 @@ class BoosterBackEnv(gym.Env):
         return obs
 
     def reset(self):
+
         p.resetSimulation()
         p.setGravity(0, 0, -9.8)
         p.setTimeStep(0.01)
         self.plane_id = p.loadURDF("plane.urdf")
         self.dry_weight = 20.
+        self.step_count = 0
 
         path = os.path.abspath(os.path.dirname(__file__))   
 
@@ -188,10 +191,13 @@ class BoosterBackEnv(gym.Env):
             # print("bell is down")
             done = True
             reward += 100.0
-        
+
+        self.step_count += 1
+        if self.step_count > self.max_steps:
+            done = True
+
         if done and len(nose_contact_points) == 0:
             reward += self.fuel
-
             
         return obs, reward, done, info
 

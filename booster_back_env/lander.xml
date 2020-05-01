@@ -1,0 +1,333 @@
+
+<robot name="booster">
+
+    <material name="gray">
+        <color rgba="0.3 0.3 0.3 1"/>
+    </material>
+    
+    <material name="black">
+        <color rgba="0.03 0.01 0.01 1"/>
+    </material>
+
+    <material name="red">
+        <color rgba="0.9 0.3 0.3 1"/>
+    </material>
+
+    <material name="plume">
+    	<color rgba="0.9 0.3 0.0 0.5"/>
+    </material>
+
+
+  <link name="bell">
+    <visual>
+      <geometry>
+         <mesh filename="small_bell_nozzle.stl"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0.00 0.55"/>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry>
+         <mesh filename="bell_nozzle.stl"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0.0 0.55"/>
+      <contact_coefficents mu="0.0" kp="0.0" kd="0.0"/>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+
+
+  <link name="body">
+    <visual>
+      <geometry>
+	      <cylinder length="0.5" radius="0.45"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0.00 1.0"/>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+	      <cylinder length="0.5" radius="0.4"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0.0 0.5"/>
+      <contact_coefficents mu="0.0" kp="0.0" kd="0.0"/>
+    </collision>
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <link name="nosecone">
+    <visual>
+      <geometry>
+         <mesh filename="crew_cargo_cabin.stl"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0.00 1.5"/>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+         <mesh filename="crew_cargo_cabin.stl"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0.0 7."/>
+      <contact_coefficents mu="0.0" kp="0.0" kd="0.0"/>
+    </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <link name="gear0">
+    <visual>
+      <geometry>
+	      <cylinder length="1.0" radius="0.05"/>
+      </geometry>
+      <origin rpy="0 -60 0" xyz="0.5 0. 0.8"/>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+	      <cylinder length="1.0" radius="0.4"/>
+      </geometry>
+      <origin rpy="0 -60 0" xyz="0.5 0.0 .8"/>
+      <contact_coefficents mu="0.0" kp="0.0" kd="0.0"/>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <link name="gear1">
+    <visual>
+      <geometry>
+	      <cylinder length="1.0" radius="0.05"/>
+      </geometry>
+      <origin rpy="0 60 0" xyz="-.50 0. 0.8"/>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+	      <cylinder length="1.0" radius="0.4"/>
+     </geometry>
+      <origin rpy="0 60 0" xyz="-0.5 0. .8"/>
+      <contact_coefficents mu="0.0" kp="0.0" kd="0.0"/>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <link name="gear2">
+    <visual>
+      <geometry>
+	      <cylinder length="1.0" radius="0.05"/>
+      </geometry>
+      <origin rpy="60 0 0" xyz="0.0 0.5 0.8"/>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+	      <cylinder length="1.0" radius="0.4"/>
+      </geometry>
+      <origin rpy="60 0 0" xyz="0. 0.5 .8"/>
+      <contact_coefficents mu="0.0" kp="0.0" kd="0.0"/>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <link name="gear3">
+    <visual>
+      <geometry>
+	      <cylinder length="1.0" radius="0.05"/>
+      </geometry>
+      <origin rpy="-60 0 0" xyz="0.0 -0.5 0.8"/>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+	      <cylinder length="1.0" radius="0.4"/>
+      </geometry>
+      <origin rpy="-60 0 0" xyz="0. -0.5 .8"/>
+      <contact_coefficents mu="0.0" kp="0.0" kd="0.0"/>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+
+  <link name="thrust_plume">
+    <visual>
+      <geometry>
+	      <capsule length="1.0" radius="0.025"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.0 0.0 -0.1"/>
+      <material name="plume"/>
+    </visual>
+    <inertial>
+      <mass value="0.0"/>
+      <inertia ixx="0.000" ixy="0.0" ixz="0.0" iyy="0.000" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.1"/>
+    </inertial>
+  </link>
+
+  <link name="rx0">
+    <visual>
+      <geometry>
+	      <sphere radius="0.125"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.45 0.0 1.5"/>
+      <material name="plume"/>
+    </visual>
+    <inertial>
+      <mass value="0.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <link name="rx1">
+    <visual>
+      <geometry>
+	      <sphere radius="0.125"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="-0.45 0.0 1.5"/>
+      <material name="plume"/>
+    </visual>
+    <inertial>
+      <mass value="0.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <link name="rx2">
+    <visual>
+      <geometry>
+	      <sphere radius="0.125"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.0 0.45 1.5"/>
+      <material name="plume"/>
+    </visual>
+    <inertial>
+      <mass value="0.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <link name="rx3">
+    <visual>
+      <geometry>
+	      <sphere radius="0.125"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.0 -0.45 1.5"/>
+      <material name="plume"/>
+    </visual>
+    <inertial>
+      <mass value="0.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      <origin rpy="0 0 0" xyz="0 0.0 0.3"/>
+    </inertial>
+  </link>
+
+  <joint name="bell_body" type="fixed">
+    <parent link="bell"/>
+    <child link="body"/>
+    <axis xyz="0 -1 0"/>
+    <limit effort="100." lower="-91.0" upper="91.0" velocity="10.0"/>
+    <joint_properties damping="0.0" friction="0.0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="body_nose" type="fixed">
+    <parent link="body"/>
+    <child link="nosecone"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="body_gear0" type="fixed">
+    <parent link="body"/>
+    <child link="gear0"/>
+    <axis xyz="-1 0 0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <joint name="body_gear1" type="fixed">
+    <parent link="body"/>
+    <child link="gear1"/>
+    <axis xyz="-1 0 0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <joint name="body_gear2" type="fixed">
+    <parent link="body"/>
+    <child link="gear2"/>
+    <axis xyz="-1 0 0"/>
+    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <joint name="body_gear3" type="fixed">
+    <parent link="body"/>
+    <child link="gear3"/>
+    <axis xyz="-1 0 0"/>
+    <limit effort="10." lower="-10.0" upper="10.0" velocity="10.0"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="bell_plume" type="fixed">
+    <parent link="bell"/>
+    <child link="thrust_plume"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="body_rx0" type="fixed">
+    <parent link="body"/>
+    <child link="rx0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="body_rx1" type="fixed">
+    <parent link="body"/>
+    <child link="rx1"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="body_rx2" type="fixed">
+    <parent link="body"/>
+    <child link="rx2"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="body_rx3" type="fixed">
+    <parent link="body"/>
+    <child link="rx3"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  </joint>
+
+</robot>
