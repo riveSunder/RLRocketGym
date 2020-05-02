@@ -20,14 +20,8 @@ class BoosterBackEnv(gym.Env):
         self.k_friction = 0.001
         self.render = render
         self.mode = mode
-        # start physics client
-        if render:
-            self.physicsClient = p.connect(p.GUI)
-        else:
-            self.physicsClient = p.connect(p.DIRECT)
+        self.physics_connected = False
 
-        # add search paths from pybullet for e.g. plane.urdf
-        p.setAdditionalSearchPath(pybullet_data.getDataPath())
         self.max_steps = 1000
 
     def create_rocket(self, height=1.0, radius=1.):
@@ -39,7 +33,7 @@ class BoosterBackEnv(gym.Env):
             self.start_height = 4.0
             self.dry_weight = 1.
             self.fuel = 4.0
-            self.max_thrust = [20.,20.,500.]
+            self.max_thrust = [2., 2., 50.]
             
             # not ready yet
             #self.plane_id = p.loadURDF(os.path.join(path,"lunar.urdf"))
@@ -89,7 +83,6 @@ class BoosterBackEnv(gym.Env):
 
         p.resetBaseVelocity(self.bot_id, linearVelocity=\
                 [np.random.randn(), np.random.randn(), -self.velocity_0 + np.random.randn()*1.0])
-        pass
 
     def get_obs(self):
 
@@ -105,13 +98,25 @@ class BoosterBackEnv(gym.Env):
         obs.extend(velocity[0])
         obs.extend(velocity[1])
 
+        obs.append(self.fuel)
         obs = np.array(obs)
 
         return obs
 
     def reset(self):
 
-        p.resetSimulation()
+        if not self.physics_connected:
+            # start physics client
+            if self.render:
+                self.physics_client = p.connect(p.GUI)
+            else:
+                self.physics_client = p.connect(p.DIRECT)
+            self.physics_connected = True
+
+            # add search paths from pybullet for e.g. plane.urdf
+            p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        else:
+            p.resetSimulation()
 
         self.create_rocket()
         obs = self.get_obs()
@@ -157,8 +162,12 @@ class BoosterBackEnv(gym.Env):
                 thrust_y = np.sign(thrust_y) * np.min([self.fuel/self.kg_per_kN/2, np.abs(thrust_y)])
                 self.fuel -= np.abs(thrust_y) * self.kg_per_kN
 
-            p.applyExternalForce(self.bot_id, 1, [thrust_x, thrust_y, 0.0],\
-                    posObj=[0.0, 0.0, 5.5], flags=p.LINK_FRAME)
+            if self.mode == "lunar":
+                p.applyExternalForce(self.bot_id, 2, [thrust_x, thrust_y, 0.0],\
+                        posObj=[0.0, 0.0, 2.5], flags=p.LINK_FRAME)
+            else:
+                p.applyExternalForce(self.bot_id, 1, [thrust_x, thrust_y, 0.0],\
+                        posObj=[0.0, 0.0, 5.5], flags=p.LINK_FRAME)
 
             p.changeDynamics(self.bot_id, 1, mass=self.fuel+self.dry_weight)
             self.fuel = 0.0 if self.fuel <= 0.0 else self.fuel
@@ -192,6 +201,9 @@ class BoosterBackEnv(gym.Env):
 
     def step(self, action):
     
+        sigmoid = lambda x: 1 / (1 + np.exp(-np.clip(x, -709, 709)))
+        action[0:2] = np.tanh(action[0:2])
+        action[2] = sigmoid(action[2])
         action = [action[mm] * t for mm, t in enumerate(self.max_thrust)]
         
         self.apply_thrust(action[2])
@@ -209,13 +221,18 @@ class BoosterBackEnv(gym.Env):
 
         # check for collision nose cone on ground plane
         nose_contact_points= p.getContactPoints(self.bot_id, self.plane_id, 1)
+        landing_gear_contacts = []
+        for link_idx in range(3,7):
+            landing_gear_contacts.append(p.getContactPoints(self.bot_id, link_idx))
+
+        landed = 0 not in [len(elem) for elem in landing_gear_contacts]
 
         if len(nose_contact_points) > 0:
             # print("nose ground collsion")
             done = True
             reward -= 300.0
             # nose cone is on the ground
-        elif np.abs(np.mean(obs[-7:-4])) < 1e-4:
+        elif landed and np.abs(np.mean(obs[-7:-4])) < 1e-2:
             # print("bell is down")
             done = True
             reward += 200.0
@@ -228,14 +245,23 @@ class BoosterBackEnv(gym.Env):
             reward += self.fuel
         elif not done:
             # survival bonus
-            reward += 0.1
+            reward += 0.01
+        else:
+            # lost in space
+            reward -= 250
         
         #if done: print(self.step_count)
 
             
         return obs, reward, done, info
 
-    
+    def close(self):
+        if (self.physics_connected):
+            p.disconnect()
+
+            self.physics_connected = False
+
+
 
 
 if __name__ == "__main__":

@@ -225,11 +225,9 @@ class MLPAgent(Agent):
 
         for pp in range(len(self.cell_dim)):
             x = np.matmul(x, self.layers[pp])
-            if pp < len(self.cell_dim)-1:
-                x = relu(x)
-            else:
-                y = x
+            x = relu(x)
 
+        y = np.matmul(x, self.layers[-1])
         return y
         
     def get_action(self, obs):
