@@ -14,23 +14,81 @@ from agents import RandomAgent, MaxThrustAgent, LSTMAgent
 
 class BoosterBackEnv(gym.Env):
 
-    def __init__(self, render=False):
+    def __init__(self, render=False, mode="lunar"):
         super(BoosterBackEnv, self).__init__()
         
         self.k_friction = 0.001
         self.render = render
+        self.mode = mode
         # start physics client
         if render:
             self.physicsClient = p.connect(p.GUI)
         else:
             self.physicsClient = p.connect(p.DIRECT)
 
-        self.max_thrust = [200., 200., 5000.]
         # add search paths from pybullet for e.g. plane.urdf
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         self.max_steps = 1000
 
     def create_rocket(self, height=1.0, radius=1.):
+
+        path = os.path.abspath(os.path.dirname(__file__))   
+
+        if self.mode == "lunar":
+            p.setGravity(0,0.,-1.625)
+            self.start_height = 4.0
+            self.dry_weight = 1.
+            self.fuel = 4.0
+            self.max_thrust = [20.,20.,500.]
+            
+            # not ready yet
+            #self.plane_id = p.loadURDF(os.path.join(path,"lunar.urdf"))
+            self.plane_id = p.loadURDF("plane.urdf")
+            shift = [np.random.randn()*1.0, np.random.randn()*1.0, self.start_height + np.random.random()]
+
+            orientation = p.getQuaternionFromEuler(\
+                    [np.random.randn(1) / 5, np.random.randn(1) / 5, np.random.rand(1) / 3])
+        else:
+            p.setGravity(0, 0, -9.8)
+            self.start_height = 4.0
+            self.dry_weight = 1.
+            self.fuel = 100.0
+            self.max_thrust = [200.,200.,5000.]
+            self.start_height = 4.
+            shift = [np.random.randn()*1.0, np.random.randn()*1.0, self.start_height + np.random.random()]
+
+            orientation = p.getQuaternionFromEuler(\
+                    [np.random.randn(1) / 5, np.random.randn(1) / 5, np.random.rand(1) / 3])
+
+            self.plane_id = p.loadURDF("plane.urdf")
+        p.setTimeStep(0.01)
+        self.step_count = 0
+
+
+        if self.mode == "lunar":
+            self.bot_id = p.loadURDF(os.path.join(path, "lander.xml"), shift, orientation)
+        else:
+            self.bot_id = p.loadURDF(os.path.join(path, "booster.xml"),\
+                shift,\
+                orientation)
+        #self.create_rocket()
+        self.velocity_0 = 0.1
+        self.fuel = 100.0
+        self.kg_per_kN = 0.03 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
+        p.changeDynamics(self.bot_id, -1, mass = 3.0)
+        p.changeDynamics(self.bot_id, 1, mass = 1.0)
+        p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
+
+        # get rid of damping
+        num_links = 11
+        for ii in range(num_links):
+            p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
+        p.changeDynamics(self.bot_id, 0, mass=self.fuel)
+
+        # give the rocket a high incoming velocity 
+
+        p.resetBaseVelocity(self.bot_id, linearVelocity=\
+                [np.random.randn(), np.random.randn(), -self.velocity_0 + np.random.randn()*1.0])
         pass
 
     def get_obs(self):
@@ -54,39 +112,8 @@ class BoosterBackEnv(gym.Env):
     def reset(self):
 
         p.resetSimulation()
-        p.setGravity(0, 0, -9.8)
-        p.setTimeStep(0.01)
-        self.plane_id = p.loadURDF("plane.urdf")
-        self.dry_weight = 20.
-        self.step_count = 0
 
-        path = os.path.abspath(os.path.dirname(__file__))   
-
-        shift = [np.random.randn()*1.0, np.random.randn()*1.0, 30 + np.random.random()]
-
-        orientation = p.getQuaternionFromEuler(\
-                [np.random.randn(1) / 3,np.random.randn(1) / 3, np.random.rand(1) / 3])
-        self.bot_id = p.loadURDF(os.path.join(path, "booster.xml"),\
-            shift,\
-            orientation)
-        #self.create_rocket()
-
-        self.fuel = 100.0
-        self.kg_per_kN = 0.03 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
-        p.changeDynamics(self.bot_id, -1, mass = 3.0)
-        p.changeDynamics(self.bot_id, 1, mass = 1.0)
-        p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
-
-        # get rid of damping
-        num_links = 11
-        for ii in range(num_links):
-            p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
-        p.changeDynamics(self.bot_id, 0, mass=self.fuel)
-
-        # give the rocket a high incoming velocity 
-        p.resetBaseVelocity(self.bot_id, linearVelocity=\
-                [np.random.randn(), np.random.randn(), -20 + np.random.randn()*1.0])
-
+        self.create_rocket()
         obs = self.get_obs()
 
         return obs
@@ -112,12 +139,12 @@ class BoosterBackEnv(gym.Env):
         else:
             thrust = 0.0
         
-        if self.render:
+        if 0 * self.render:
             # visual indicators of thrust
             p.changeVisualShape(self.bot_id, -1, rgbaColor=[5e-4*thrust, 0.01, 0.01, 1.0])
             if thrust:
                 p.changeVisualShape(self.bot_id, 10, rgbaColor=[\
-                        0.75 + 0.25*np.random.random(), 0.1, 0.0, 0.35 + np.random.random()/2])
+                        1.0, 0.1, 0.0, thrust/self.max_thrust[2]/2])
             else:
                 p.changeVisualShape(self.bot_id, 10, rgbaColor=[0.,0.,0.,0.])
 
@@ -138,14 +165,14 @@ class BoosterBackEnv(gym.Env):
         else: 
             thrust_x, thrust_y = 0., 0.
             
-        if self.render:
+        if 0 * self.render:
             if thrust_x > 0.:
                 p.changeVisualShape(self.bot_id, 7, rgbaColor=[\
-                        np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
+                        0.25 + 0.75, 0.1, 0.0, np.abs(thrust_x)/self.max_thrust[0]/2])
                 p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.0])
             elif thrust_x < 0.:
                 p.changeVisualShape(self.bot_id, 6, rgbaColor=[\
-                        np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
+                        0.25 + 0.75, 0.1, 0.0, np.abs(thrust_x)/self.max_thrust[0]/2])
                 p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
             else:
                 p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.])
@@ -153,11 +180,11 @@ class BoosterBackEnv(gym.Env):
 
             if thrust_y > 0:
                 p.changeVisualShape(self.bot_id, 9, rgbaColor=[\
-                        np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 +np.random.random()/2])
+                        0.25 + 0.75, 0.1, 0.0, np.abs(thrust_y)/self.max_thrust[0]/2])
                 p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.0])
             elif thrust_y < 0.:
                 p.changeVisualShape(self.bot_id, 8, rgbaColor=[\
-                        np.random.random()*0.25 + 0.75, 0.1, 0.0, 0.4 + np.random.random()/2])
+                        0.25 + 0.75, 0.1, 0.0, np.abs(thrust_y)/self.max_thrust[0]/2])
                 p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
             else:
                 p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.])
@@ -175,7 +202,8 @@ class BoosterBackEnv(gym.Env):
         
         obs = self.get_obs()
 
-        reward, info = 1.0, None
+        reward, info = 0.0, None
+
 
         done = False
 
@@ -190,7 +218,7 @@ class BoosterBackEnv(gym.Env):
         elif np.abs(np.mean(obs[-7:-4])) < 1e-4:
             # print("bell is down")
             done = True
-            reward += 100.0
+            reward += 200.0
 
         self.step_count += 1
         if self.step_count > self.max_steps:
@@ -198,6 +226,12 @@ class BoosterBackEnv(gym.Env):
 
         if done and len(nose_contact_points) == 0:
             reward += self.fuel
+        elif not done:
+            # survival bonus
+            reward += 0.1
+        
+        #if done: print(self.step_count)
+
             
         return obs, reward, done, info
 
@@ -206,11 +240,12 @@ class BoosterBackEnv(gym.Env):
 
 if __name__ == "__main__":
 
-    env = BoosterBackEnv(render=True)
-    epds = 4
+    env = BoosterBackEnv(render=True, mode="booster")
+    epds = 8
 
-    agent = LSTMAgent()
+    #agent = LSTMAgent()
     #agent = MaxThrustAgent()
+    agent = RandomAgent()
 
     for epd in range(epds):
         obs = env.reset()
@@ -218,6 +253,7 @@ if __name__ == "__main__":
         while not done:
 
             action = agent.get_action(obs)
+            time.sleep(0.01)
             obs, reward, done, info = env.step(action)
 
     import pdb; pdb.set_trace()
