@@ -30,15 +30,15 @@ class BoosterBackEnv(gym.Env):
 
         if self.mode == "lunar":
             p.setGravity(0,0.,-1.625)
-            self.start_height = 4.0
-            self.dry_weight = 1.
-            self.fuel = 4.0
-            self.max_thrust = [2., 2., 50.]
+            self.start_height = 5.0
+            self.dry_weight = 0.1
+            self.fuel = 32.0
+            self.max_thrust = [50., 50., 200.]
             
             # not ready yet
             #self.plane_id = p.loadURDF(os.path.join(path,"lunar.urdf"))
             self.plane_id = p.loadURDF("plane.urdf")
-            shift = [np.random.randn()*1.0, np.random.randn()*1.0, self.start_height + np.random.random()]
+            shift = [np.random.randn()*1.0, np.random.randn()*1.0, self.start_height * np.random.random()]
 
             orientation = p.getQuaternionFromEuler(\
                     [np.random.randn(1) / 5, np.random.randn(1) / 5, np.random.rand(1) / 3])
@@ -47,7 +47,7 @@ class BoosterBackEnv(gym.Env):
             self.start_height = 4.0
             self.dry_weight = 1.
             self.fuel = 100.0
-            self.max_thrust = [200.,200.,5000.]
+            self.max_thrust = [10,10.,5000.]
             self.start_height = 4.
             shift = [np.random.randn()*1.0, np.random.randn()*1.0, self.start_height + np.random.random()]
 
@@ -55,6 +55,9 @@ class BoosterBackEnv(gym.Env):
                     [np.random.randn(1) / 5, np.random.randn(1) / 5, np.random.rand(1) / 3])
 
             self.plane_id = p.loadURDF("plane.urdf")
+            p.changeDynamics(self.bot_id, -1, mass = 3.0)
+            p.changeDynamics(self.bot_id, 1, mass = 1.0)
+            p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
         p.setTimeStep(0.01)
         self.step_count = 0
 
@@ -69,15 +72,13 @@ class BoosterBackEnv(gym.Env):
         self.velocity_0 = 0.1
         self.fuel = 100.0
         self.kg_per_kN = 0.03 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
-        p.changeDynamics(self.bot_id, -1, mass = 3.0)
-        p.changeDynamics(self.bot_id, 1, mass = 1.0)
-        p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
 
         # get rid of damping
         num_links = 11
         for ii in range(num_links):
             p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
-        p.changeDynamics(self.bot_id, 0, mass=self.fuel)
+
+        p.changeDynamics(self.bot_id, 0, mass=self.dry_weight+self.fuel)
 
         # give the rocket a high incoming velocity 
 
@@ -223,32 +224,32 @@ class BoosterBackEnv(gym.Env):
         nose_contact_points= p.getContactPoints(self.bot_id, self.plane_id, 1)
         landing_gear_contacts = []
         for link_idx in range(3,7):
-            landing_gear_contacts.append(p.getContactPoints(self.bot_id, link_idx))
+            landing_gear_contacts.append(p.getContactPoints(self.bot_id, self.plane_id, link_idx))
 
-        landed = 0 not in [len(elem) for elem in landing_gear_contacts]
+        landed = True in [len(elem) > 0 for elem in landing_gear_contacts]
 
         if len(nose_contact_points) > 0:
-            # print("nose ground collsion")
+            #print("nose ground collsion")
             done = True
             reward -= 300.0
             # nose cone is on the ground
-        elif landed and np.abs(np.mean(obs[-7:-4])) < 1e-2:
-            # print("bell is down")
+        elif landed and np.abs(np.mean(obs[-7:-4])) < 1e-4:
+            #print("bell is down")
             done = True
             reward += 200.0
 
         self.step_count += 1
         if self.step_count > self.max_steps:
             done = True
+            # lost in space
+            #print("lost in space")
+            reward -= 350
 
         if done and len(nose_contact_points) == 0:
             reward += self.fuel
         elif not done:
             # survival bonus
             reward += 0.01
-        else:
-            # lost in space
-            reward -= 250
         
         #if done: print(self.step_count)
 
@@ -266,7 +267,7 @@ class BoosterBackEnv(gym.Env):
 
 if __name__ == "__main__":
 
-    env = BoosterBackEnv(render=True, mode="booster")
+    env = BoosterBackEnv(render=True)
     epds = 8
 
     #agent = LSTMAgent()
