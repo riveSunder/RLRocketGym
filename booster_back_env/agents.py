@@ -165,6 +165,7 @@ class MLPAgent(Agent):
 
             self.num_parameters = self.obs_dim *self.cell_dim[0] \
                     + self.act_dim * self.cell_dim[-1]
+
             for dim in self.cell_dim[:-1]:
                 self.num_parameters += dim**2
                 
@@ -175,12 +176,16 @@ class MLPAgent(Agent):
         else:
             assert False, "data type of hidden dimension arg not understood"
 
+        # bias parameters
+        self.num_parameters += len(self.cell_dim)
         self.init_network()
         self.reset()
 
     def sample_parameters(self, pop_mean, covariance):
 
         parameters = np.random.standard_normal(self.num_parameters)
+        if parameters.shape !=  np.diag(covariance).shape:
+            import pdb; pdb.set_trace()
 
         parameters *= np.diag(covariance)
 
@@ -212,6 +217,10 @@ class MLPAgent(Agent):
         self.layers.append(parameters[prev_dim:temp_dim]\
                 .reshape(self.cell_dim[-1], self.act_dim))
 
+        self.biases = []
+        for qq in range(len(self.cell_dim)):
+            self.biases.append(parameters[prev_dim+qq])
+
     def reset(self):
         pass
 
@@ -224,8 +233,8 @@ class MLPAgent(Agent):
             return x
 
         for pp in range(len(self.cell_dim)):
-            x = np.matmul(x, self.layers[pp])
-            x = relu(x)
+            x = np.tanh(np.matmul(x, self.layers[pp])+self.biases[pp])
+            #x = relu(x)
 
         y = np.matmul(x, self.layers[-1])
         return y
@@ -243,7 +252,8 @@ class MLPAgent(Agent):
 
         parameters = np.array([])
         for param in self.layers:
-
             parameters = np.concatenate([parameters, param.ravel()])
+        for bias in self.biases:
+            parameters = np.append(parameters, bias)
 
         return parameters
