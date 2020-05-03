@@ -10,7 +10,7 @@ from gym.utils import seeding
 import pybullet as p
 import pybullet_data
 
-from agents import RandomAgent, MaxThrustAgent, LSTMAgent
+from agents import RandomAgent, MaxThrustAgent, LSTMAgent, DoNothingAgent
 
 class BoosterBackEnv(gym.Env):
 
@@ -30,18 +30,32 @@ class BoosterBackEnv(gym.Env):
 
         if self.mode == "lunar":
             p.setGravity(0,0.,-1.625)
-            self.start_height = 5.0
-            self.dry_weight = 0.1
-            self.fuel = 32.0
-            self.max_thrust = [50., 50., 200.]
+            self.start_height = 1.0
+            self.dry_weight = 3.
+            min_height = 5.0
+            self.fuel = 8.0
+            self.max_thrust = [30., 30., 300.]
             
             # not ready yet
             #self.plane_id = p.loadURDF(os.path.join(path,"lunar.urdf"))
             self.plane_id = p.loadURDF("plane.urdf")
-            shift = [np.random.randn()*1.0, np.random.randn()*1.0, self.start_height * np.random.random()]
+            shift = [0., 0., min_height + self.start_height *np.random.randn()]
 
             orientation = p.getQuaternionFromEuler(\
-                    [np.random.randn(1) / 5, np.random.randn(1) / 5, np.random.rand(1) / 3])
+                    [0.0, 1.0, 1.0])
+
+            self.bot_id = p.loadURDF(os.path.join(path, "lander.xml"), shift, orientation)
+
+            p.changeDynamics(self.bot_id, 0, mass=self.dry_weight + self.fuel)
+            p.changeDynamics(self.bot_id, 1, mass=2.0)
+
+            for ii in range(2,11):
+                p.changeDynamics(self.bot_id, 1, mass=00.0)
+
+            num_links = 11
+            for ii in range(num_links):
+                p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
+
         else:
             p.setGravity(0, 0, -9.8)
             self.start_height = 4.0
@@ -49,41 +63,34 @@ class BoosterBackEnv(gym.Env):
             self.fuel = 100.0
             self.max_thrust = [10,10.,5000.]
             self.start_height = 4.
-            shift = [np.random.randn()*1.0, np.random.randn()*1.0, self.start_height + np.random.random()]
+            shift = [0,0, self.start_height]
 
             orientation = p.getQuaternionFromEuler(\
-                    [np.random.randn(1) / 5, np.random.randn(1) / 5, np.random.rand(1) / 3])
+                    [np.random.randn(1) / 15, np.random.randn(1) / 5, np.random.rand(1) / 3])
 
             self.plane_id = p.loadURDF("plane.urdf")
             p.changeDynamics(self.bot_id, -1, mass = 3.0)
             p.changeDynamics(self.bot_id, 1, mass = 1.0)
             p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
+            self.bot_id = p.loadURDF(os.path.join(path, "booster.xml"),\
+                shift,\
+                orientation)
+            # get rid of damping
+
+            num_links = 11
+            for ii in range(num_links):
+                p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
         p.setTimeStep(0.01)
         self.step_count = 0
 
 
-        if self.mode == "lunar":
-            self.bot_id = p.loadURDF(os.path.join(path, "lander.xml"), shift, orientation)
-        else:
-            self.bot_id = p.loadURDF(os.path.join(path, "booster.xml"),\
-                shift,\
-                orientation)
-        #self.create_rocket()
         self.velocity_0 = 0.1
-        self.fuel = 100.0
-        self.kg_per_kN = 0.03 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
-
-        # get rid of damping
-        num_links = 11
-        for ii in range(num_links):
-            p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
-
-        p.changeDynamics(self.bot_id, 0, mass=self.dry_weight+self.fuel)
+        self.kg_per_kN = 1.0 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
 
         # give the rocket a high incoming velocity 
 
-        p.resetBaseVelocity(self.bot_id, linearVelocity=\
-                [np.random.randn(), np.random.randn(), -self.velocity_0 + np.random.randn()*1.0])
+        #p.resetBaseVelocity(self.bot_id, linearVelocity=\
+        #        [np.random.randn(), np.random.randn(), -self.velocity_0 + np.random.randn()*1.0])
 
     def get_obs(self):
 
@@ -102,6 +109,26 @@ class BoosterBackEnv(gym.Env):
         obs.append(self.fuel)
         obs = np.array(obs)
 
+#        block_state = p.getLinkState(bodyUniqueId=self.bot_id,\
+#                linkIndex=1)
+#
+#
+#        fov, aspect, nearplane, farplane = 60, 1.0, 0.01, 100
+#        projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, nearplane, farplane)
+#        # Center of mass position and orientation (of link-7)
+#        com_p, com_o, _, _, _, _ = p.getLinkState(self.bot_id, 0, \
+#                computeForwardKinematics=True)
+#        com_p, com_o = cube_position, cube_orientation
+#        rot_matrix = p.getMatrixFromQuaternion(com_o)
+#        rot_matrix = np.array(rot_matrix).reshape(3, 3)
+#        # Initial vectors
+#        init_camera_vector = np.array((0, 1, 0)) # z-axis
+#        init_up_vector = (0, 0, 1) # y-axis
+#        # Rotated vectors
+#        camera_vector = rot_matrix.dot(init_camera_vector)
+#        up_vector = rot_matrix.dot(init_up_vector)
+#        view_matrix = p.computeViewMatrix(com_p, com_p + 0.1 * camera_vector, up_vector)
+#        view_image = p.getCameraImage(self.dim_x, self.dim_y, view_matrix, projection_matrix)
         return obs
 
     def reset(self):
@@ -140,7 +167,7 @@ class BoosterBackEnv(gym.Env):
             # decrement fuel proportional to the thrust used
             self.fuel -= thrust * self.kg_per_kN
 
-            p.changeDynamics(self.bot_id, 1, mass=self.fuel+self.dry_weight)
+            p.changeDynamics(self.bot_id, 0, mass=self.fuel+self.dry_weight)
             self.fuel = 0.0 if self.fuel <= 0.0 else self.fuel
         else:
             thrust = 0.0
@@ -164,13 +191,13 @@ class BoosterBackEnv(gym.Env):
                 self.fuel -= np.abs(thrust_y) * self.kg_per_kN
 
             if self.mode == "lunar":
-                p.applyExternalForce(self.bot_id, 2, [thrust_x, thrust_y, 0.0],\
-                        posObj=[0.0, 0.0, 2.5], flags=p.LINK_FRAME)
+                p.applyExternalForce(self.bot_id, 1, [thrust_x, thrust_y, 0.0],\
+                        posObj=[0.0, 0.0, 0.5], flags=p.LINK_FRAME)
             else:
                 p.applyExternalForce(self.bot_id, 1, [thrust_x, thrust_y, 0.0],\
                         posObj=[0.0, 0.0, 5.5], flags=p.LINK_FRAME)
 
-            p.changeDynamics(self.bot_id, 1, mass=self.fuel+self.dry_weight)
+            p.changeDynamics(self.bot_id, 0, mass=self.fuel+self.dry_weight)
             self.fuel = 0.0 if self.fuel <= 0.0 else self.fuel
         else: 
             thrust_x, thrust_y = 0., 0.
@@ -268,11 +295,12 @@ class BoosterBackEnv(gym.Env):
 if __name__ == "__main__":
 
     env = BoosterBackEnv(render=True)
-    epds = 8
+    epds = 3
 
     #agent = LSTMAgent()
     #agent = MaxThrustAgent()
-    agent = RandomAgent()
+    #agent = RandomAgent()
+    agent = DoNothingAgent()
 
     for epd in range(epds):
         obs = env.reset()
