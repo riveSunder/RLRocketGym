@@ -92,7 +92,7 @@ class LSTMAgent(Agent):
             pop_mean = np.zeros(self.num_parameters)
         if covariance is None:
             covariance = np.eye(self.num_parameters)
-        
+
         parameters = self.sample_parameters(pop_mean, covariance, mode=mode)
 
         dim_x2f = (self.obs_dim + self.cell_dim) * self.cell_dim
@@ -117,7 +117,7 @@ class LSTMAgent(Agent):
         self.sigmoid = lambda x: 1 / (1 + np.exp(-np.clip(x, -709, 709)))
 
         def relu(x):
-            x[x<0.0] *= 0.0
+            x = np.clip(x,0,1e5)
             return x
 
         if 1:
@@ -199,7 +199,7 @@ class MLPAgent(Agent):
         self.init_network()
         self.reset()
 
-    def sample_parameters(self, pop_mean, covariance, mode="CMA"):
+    def sample_parameters(self, pop_mean, covariance, mode="ES"):
 
 
         if mode == "ES":
@@ -217,14 +217,14 @@ class MLPAgent(Agent):
 
         return parameters
 
-    def init_network(self, pop_mean=None, covariance=None, mode="CMA"):
+    def init_network(self, pop_mean=None, covariance=None, mode="ES"):
 
         if pop_mean is None:
             pop_mean = np.zeros(self.num_parameters)
         if covariance is None:
             covariance = np.eye(self.num_parameters)
         
-        parameters = self.sample_parameters(pop_mean, covariance)
+        parameters = self.sample_parameters(pop_mean, covariance, mode=mode)
         
         self.layers = []
         prev_dim = self.obs_dim * self.cell_dim[0]
@@ -253,12 +253,12 @@ class MLPAgent(Agent):
         self.sigmoid = lambda x: 1 / (1 + np.exp(-np.clip(x, -709, 709)))
 
         def relu(x):
-            x[x<0.0] *= 0.0
+            x = np.clip(x,0,1e5)
             return x
 
         for pp in range(len(self.cell_dim)):
-            x = (np.matmul(x, self.layers[pp])+self.biases[pp])
-            x = relu(x)
+            x = np.tanh(np.matmul(x, self.layers[pp])+self.biases[pp])
+            #x = relu(x)
 
         y = np.matmul(x, self.layers[-1])
         return y

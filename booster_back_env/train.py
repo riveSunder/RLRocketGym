@@ -12,20 +12,23 @@ import pybullet_data
 
 from agents import RandomAgent, MaxThrustAgent, LSTMAgent, MLPAgent
 from booster_back_env import BoosterBackEnv
-from populations import ESPopulation
+from populations import ESPopulation, CMAPopulation
+import skimage
+import skimage.io
 
 if __name__ == "__main__":
 
     env = BoosterBackEnv()
-    epds = 4 
-    pop_size = 128
+    epds = 16
+    pop_size = 64
 
     #agent_fn = LSTMAgent
     agent_fn = MLPAgent
-    agent_args = dict(obs_dim=49, cell_dim=[32,32], act_dim=3)
+    agent_args = dict(obs_dim=49, cell_dim=[16,16], act_dim=3)
             
 
-    population = ESPopulation(agent_fn, env, population_size=pop_size, agent_args=agent_args)
+    population = CMAPopulation(agent_fn, env, population_size=pop_size, agent_args=agent_args)
+    print("policy params: {}".format(population.population[0].num_parameters))
 
     try:
         population.train(generations=1000, epds=epds)
@@ -40,13 +43,21 @@ if __name__ == "__main__":
         obs =  env.reset()
         done = False
         sum_rewards = 0.0
+        step = 0
         while not done:
-            action = population.best_agent.get_action(obs)
+            action = population.elite_population[epd % 8]\
+                    .get_action(obs)
             obs, reward, done, info = env.step(action)
-            time.sleep(0.05)
+            time.sleep(0.01)
             sum_rewards += reward
+            
+            img = p.getCameraImage(512,512)
 
+            skimage.io.imsave("./imgs/epd{}step{}".format(epd, step), img[2])
+
+            step += 1
         reward_sums.append(sum_rewards)
+
 
     print("average sum of rewards: {:.3e} min: {:.3e} max: {:.3e}"\
             .format(np.mean(reward_sums), np.min(reward_sums), np.max(reward_sums)))

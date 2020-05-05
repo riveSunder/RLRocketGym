@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
+import time
 
 class Agent(ABC):
 
@@ -99,10 +100,12 @@ class ESPopulation(Population):
 
         # elite population is 1/8 of total
         keep = int(0.125 * self.population_size)
+        t0 = time.time()
         for generation in range(generations):
-
+            t1 = time.time()
             fitness = self.get_fitness(epds=epds)
 
+            t2 = time.time()
             sort_indices = list(np.argsort(fitness))
             sort_indices.reverse()
 
@@ -117,7 +120,8 @@ class ESPopulation(Population):
             elite_std = np.std(sorted_fitness[:keep])
             mean_fitness = np.mean(fitness)
             pop_std = np.std(fitness)
-
+            
+            t3 = time.time()
             if self.best_elites_performance < elite_mean:
 
                 self.best_elites_performance = elite_mean
@@ -140,11 +144,15 @@ class ESPopulation(Population):
             self.covariance = np.diag(np.std(population_parameters, axis=0))
             self.update_population()
 
+            t4 = time.time()
             if verbose:
                 print("generation {} fitness - elite mean {:.2e}+/- {:2e}, pop mean {:.2e}+/-{:.2e}"\
                        .format(generation, elite_mean, elite_std, mean_fitness, pop_std))
-                print("all time best agent/elites fitness {:.2e}/{:.2e}"\
-                       .format(self.best_agent_performance, self.best_elites_performance))
+                print("t total {:.2e}, get epds: {:.2e}, calc mean {:.2e}, update pop {:.2e}"\
+                        .format(t4-t0, t2-t1, t3-t2, t4-t3))
+                if generation % 10 == 0:
+                    print("all time best agent/elites fitness {:.2e}/{:.2e}"\
+                           .format(self.best_agent_performance, self.best_elites_performance))
 
 class CMAPopulation(Population):
     """
@@ -166,6 +174,7 @@ class CMAPopulation(Population):
         self.best_elites_performance = -float("Inf")
 
     def init_population(self):
+
 
         self.population = []
 
@@ -219,9 +228,12 @@ class CMAPopulation(Population):
 
         # elite population is 1/8 of total
         keep = int(0.125 * self.population_size)
+        t0 = time.time()
         for generation in range(generations):
 
+            t1 = time.time()
             fitness = self.get_fitness(epds=epds)
+            t2 = time.time()
 
             sort_indices = list(np.argsort(fitness))
             sort_indices.reverse()
@@ -269,11 +281,16 @@ class CMAPopulation(Population):
 
             self.covariance = np.matmul((elite_parameters - self.pop_mean).T, \
                     ( elite_parameters -self.pop_mean) )
-
+            self.covariance = np.clip(self.covariance, -1e3, 1e3)
+            t3 = time.time()
             self.update_population()
 
+            t4 = time.time()
             if verbose:
                 print("generation {} fitness - elite mean {:.2e}+/- {:2e}, pop mean {:.2e}+/-{:.2e}"\
                        .format(generation, elite_mean, elite_std, mean_fitness, pop_std))
-                print("all time best agent/elites fitness {:.2e}/{:.2e}"\
-                       .format(self.best_agent_performance, self.best_elites_performance))
+                print("gen/tot {:.2e}/{:.2e}, get epds: {:.2e}, calc mean/covar {:.2e}, update pop {:.2e}"\
+                        .format(t4-t1, t4-t0, t2-t1, t3-t2, t4-t3))
+                if generation % 10 == 0:
+                    print("all time best agent/elites fitness {:.2e}/{:.2e}"\
+                           .format(self.best_agent_performance, self.best_elites_performance))
