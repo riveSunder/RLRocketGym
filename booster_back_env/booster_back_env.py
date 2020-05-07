@@ -172,7 +172,7 @@ class BoosterBackEnv(gym.Env):
         else:
             thrust = 0.0
         
-        if 0 * self.render:
+        if self.render:
             # visual indicators of thrust
             p.changeVisualShape(self.bot_id, -1, rgbaColor=[5e-4*thrust, 0.01, 0.01, 1.0])
             if thrust:
@@ -202,7 +202,7 @@ class BoosterBackEnv(gym.Env):
         else: 
             thrust_x, thrust_y = 0., 0.
             
-        if 0 * self.render:
+        if self.render:
             if thrust_x > 0.:
                 p.changeVisualShape(self.bot_id, 7, rgbaColor=[\
                         0.25 + 0.75, 0.1, 0.0, np.abs(thrust_x)/self.max_thrust[0]/2])

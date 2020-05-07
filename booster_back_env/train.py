@@ -19,19 +19,20 @@ import skimage.io
 if __name__ == "__main__":
 
     env = BoosterBackEnv()
-    epds = 16
-    pop_size = 64
+    epds = 4
+    pop_size = 128
+    cell_dim = [16,16]
 
-    #agent_fn = LSTMAgent
+    agent_fn = LSTMAgent
     agent_fn = MLPAgent
-    agent_args = dict(obs_dim=49, cell_dim=[16,16], act_dim=3)
+    agent_args = dict(obs_dim=49, cell_dim=cell_dim, act_dim=3)
             
 
     population = CMAPopulation(agent_fn, env, population_size=pop_size, agent_args=agent_args)
     print("policy params: {}".format(population.population[0].num_parameters))
 
     try:
-        population.train(generations=1000, epds=epds)
+        population.train(generations=200, epds=epds)
     except KeyboardInterrupt:
         pass
     import pdb; pdb.set_trace();
@@ -39,7 +40,8 @@ if __name__ == "__main__":
     env.close()
     env.render = True
     reward_sums = []
-    for epd in range(10):
+
+    for epd in range(4):
         obs =  env.reset()
         done = False
         sum_rewards = 0.0
@@ -53,7 +55,8 @@ if __name__ == "__main__":
             
             img = p.getCameraImage(512,512)
 
-            skimage.io.imsave("./imgs/epd{}step{}".format(epd, step), img[2])
+
+            skimage.io.imsave("./imgs/epd{}step{}.png".format(epd, step), img[2])
 
             step += 1
         reward_sums.append(sum_rewards)
