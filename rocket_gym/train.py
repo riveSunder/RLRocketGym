@@ -11,7 +11,7 @@ import pybullet as p
 import pybullet_data
 
 from agents import RandomAgent, MaxThrustAgent, LSTMAgent, MLPAgent
-from booster_back_env import BoosterBackEnv
+from rocket_env import BoosterBackEnv
 from populations import ESPopulation, CMAPopulation
 import skimage
 import skimage.io
