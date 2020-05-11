@@ -14,35 +14,72 @@ from agents import RandomAgent, MaxThrustAgent, LSTMAgent, DoNothingAgent
 
 class BoosterBackEnv(gym.Env):
 
-    def __init__(self, render=False, mode="lunar"):
+    def __init__(self, render=False, mode="balance"):
         super(BoosterBackEnv, self).__init__()
         
-        self.k_friction = 0.001
+        self.k_friction = 0.1
         self.render = render
         self.mode = mode
         self.physics_connected = False
 
-        self.max_steps = 1000
 
     def create_rocket(self, height=1.0, radius=1.):
 
         path = os.path.abspath(os.path.dirname(__file__))   
+        if self.mode == "balance":
+            p.setGravity(0, 0, -300.8)
+            self.dry_weight = 10.
+            self.fuel = 10.0
+            self.max_thrust = [100.,100.,0.]
+            shift = [0,0, 1.]
 
-        if self.mode == "lunar":
+            # adjust reward function
+            self.survival_bonus = 1.0
+            self.land_bonus = 0.0
+            self.crash_bonus = 0.0
+            self.timeout_bonus = 0.0
+            self.max_steps = 1000
+
+            orientation = p.getQuaternionFromEuler(\
+                    [np.random.randn(1) / 15, np.random.randn(1) / 15, np.random.rand(1) / 15])
+
+            self.bot_id = p.loadURDF(os.path.join(path, "balance_rocket.xml"),\
+                shift,\
+                orientation)
+            self.plane_id = p.loadURDF("plane.urdf")
+            p.changeDynamics(self.bot_id, -1, mass = 3.0)
+            p.changeDynamics(self.bot_id, 1, mass = 1.0)
+            p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
+            # get rid of damping
+
+            num_links = 11
+            for ii in range(num_links):
+                p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
+
+            self.kg_per_kN = 0.30 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
+
+        elif self.mode == "lunar":
             p.setGravity(0,0.,-1.625)
             self.start_height = 1.0
             self.dry_weight = 3.
-            min_height = 5.0
-            self.fuel = 8.0
+            min_height = 1.0
+            self.fuel = 16.0
             self.max_thrust = [30., 30., 300.]
             
+            # adjust reward function
+            self.survival_bonus = 0.001
+            self.land_bonus = 200.0
+            self.crash_bonus = -300.0
+            self.timeout_bonus = -350.0
+            self.max_steps = 1000
+
             # not ready yet
             #self.plane_id = p.loadURDF(os.path.join(path,"lunar.urdf"))
             self.plane_id = p.loadURDF("plane.urdf")
-            shift = [0., 0., min_height + self.start_height *np.random.randn()]
+            shift = [0., 0., min_height ]
 
             orientation = p.getQuaternionFromEuler(\
-                    [0.0, 1.0, 1.0])
+                    [0.95, 0.0, 0.0])
 
             self.bot_id = p.loadURDF(os.path.join(path, "lander.xml"), shift, orientation)
 
@@ -56,6 +93,8 @@ class BoosterBackEnv(gym.Env):
             for ii in range(num_links):
                 p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
 
+            self.kg_per_kN = 0.30 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
+
         else:
             p.setGravity(0, 0, -9.8)
             self.start_height = 4.0
@@ -65,27 +104,37 @@ class BoosterBackEnv(gym.Env):
             self.start_height = 4.
             shift = [0,0, self.start_height]
 
+            # adjust reward function
+            self.survival_bonus = 0.001
+            self.land_bonus = 200.0
+            self.crash_bonus = -300.0
+            self.timeout_bonus = -350.0
+            self.max_steps = 1000
+
+
             orientation = p.getQuaternionFromEuler(\
                     [np.random.randn(1) / 15, np.random.randn(1) / 5, np.random.rand(1) / 3])
 
             self.plane_id = p.loadURDF("plane.urdf")
-            p.changeDynamics(self.bot_id, -1, mass = 3.0)
-            p.changeDynamics(self.bot_id, 1, mass = 1.0)
-            p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
             self.bot_id = p.loadURDF(os.path.join(path, "booster.xml"),\
                 shift,\
                 orientation)
+            p.changeDynamics(self.bot_id, -1, mass = 3.0)
+            p.changeDynamics(self.bot_id, 1, mass = 1.0)
+            p.changeDynamics(self.bot_id, 0, mass = self.dry_weight + self.fuel)
             # get rid of damping
 
             num_links = 11
             for ii in range(num_links):
                 p.changeDynamics(self.bot_id, ii, angularDamping=0.0, linearDamping=0.0)
+
+            self.kg_per_kN = 0.30 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
+
         p.setTimeStep(0.01)
         self.step_count = 0
 
 
         self.velocity_0 = 0.1
-        self.kg_per_kN = 1.0 / 240 # g/(kN*s). 240 is due to the 240 Hz time step in the physics simulatorchangeDynamicsp.change
 
         # give the rocket a high incoming velocity 
 
@@ -171,8 +220,11 @@ class BoosterBackEnv(gym.Env):
             self.fuel = 0.0 if self.fuel <= 0.0 else self.fuel
         else:
             thrust = 0.0
+
+        if "balance" in self.mode:
+            thrust = 0
         
-        if self.render:
+        if self.render and thrust:
             # visual indicators of thrust
             p.changeVisualShape(self.bot_id, -1, rgbaColor=[5e-4*thrust, 0.01, 0.01, 1.0])
             if thrust:
@@ -203,29 +255,34 @@ class BoosterBackEnv(gym.Env):
             thrust_x, thrust_y = 0., 0.
             
         if self.render:
-            if thrust_x > 0.:
-                p.changeVisualShape(self.bot_id, 7, rgbaColor=[\
-                        0.25 + 0.75, 0.1, 0.0, np.abs(thrust_x)/self.max_thrust[0]/2])
-                p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.0])
-            elif thrust_x < 0.:
-                p.changeVisualShape(self.bot_id, 6, rgbaColor=[\
-                        0.25 + 0.75, 0.1, 0.0, np.abs(thrust_x)/self.max_thrust[0]/2])
-                p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
+            if self.mode = "balance":
+                rx0, rx1, rx2, rx3 = 4,5,6,7
             else:
-                p.changeVisualShape(self.bot_id, 6, rgbaColor=[0.,0.,0.,0.])
-                p.changeVisualShape(self.bot_id, 7, rgbaColor=[0.,0.,0.,0.0])
+                rx0, rx1, rx2, rx3 = 6,7,8,9
+
+            if thrust_x > 0.:
+                p.changeVisualShape(self.bot_id, rx1, rgbaColor=[\
+                        0.25 + 0.75, 0.1, 0.0, np.abs(thrust_x)/self.max_thrust[0]/2])
+                p.changeVisualShape(self.bot_id, rx0, rgbaColor=[0.,0.,0.,0.0])
+            elif thrust_x < 0.:
+                p.changeVisualShape(self.bot_id, rx0, rgbaColor=[\
+                        0.25 + 0.75, 0.1, 0.0, np.abs(thrust_x)/self.max_thrust[0]/2])
+                p.changeVisualShape(self.bot_id, rx1, rgbaColor=[0.,0.,0.,0.0])
+            else:
+                p.changeVisualShape(self.bot_id, rx0, rgbaColor=[0.,0.,0.,0.])
+                p.changeVisualShape(self.bot_id, rx1, rgbaColor=[0.,0.,0.,0.0])
 
             if thrust_y > 0:
-                p.changeVisualShape(self.bot_id, 9, rgbaColor=[\
+                p.changeVisualShape(self.bot_id, rx3, rgbaColor=[\
                         0.25 + 0.75, 0.1, 0.0, np.abs(thrust_y)/self.max_thrust[0]/2])
-                p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.0])
+                p.changeVisualShape(self.bot_id, rx2, rgbaColor=[0.,0.,0.,0.0])
             elif thrust_y < 0.:
-                p.changeVisualShape(self.bot_id, 8, rgbaColor=[\
+                p.changeVisualShape(self.bot_id, rx2, rgbaColor=[\
                         0.25 + 0.75, 0.1, 0.0, np.abs(thrust_y)/self.max_thrust[0]/2])
-                p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
+                p.changeVisualShape(self.bot_id, rx3, rgbaColor=[0.,0.,0.,0.0])
             else:
-                p.changeVisualShape(self.bot_id, 8, rgbaColor=[0.,0.,0.,0.])
-                p.changeVisualShape(self.bot_id, 9, rgbaColor=[0.,0.,0.,0.0])
+                p.changeVisualShape(self.bot_id, rx2, rgbaColor=[0.,0.,0.,0.])
+                p.changeVisualShape(self.bot_id, rx3, rgbaColor=[0.,0.,0.,0.0])
 
     def step(self, action):
     
@@ -258,25 +315,25 @@ class BoosterBackEnv(gym.Env):
         if len(nose_contact_points) > 0:
             #print("nose ground collsion")
             done = True
-            reward -= 300.0
+            reward -= self.crash_bonus
             # nose cone is on the ground
         elif landed and np.abs(np.mean(obs[-7:-4])) < 1e-4:
             #print("bell is down")
             done = True
-            reward += 200.0
+            reward += self.land_bonus
 
         self.step_count += 1
         if self.step_count > self.max_steps:
             done = True
             # lost in space
             #print("lost in space")
-            reward -= 350
+            reward -= self.timeout_bonus
 
         if done and len(nose_contact_points) == 0:
             reward += self.fuel
         elif not done:
             # survival bonus
-            reward += 0.01
+            reward += self.survival_bonus
         
         #if done: print(self.step_count)
 
@@ -299,8 +356,8 @@ if __name__ == "__main__":
 
     #agent = LSTMAgent()
     #agent = MaxThrustAgent()
-    #agent = RandomAgent()
-    agent = DoNothingAgent()
+    agent = RandomAgent()
+    #agent = DoNothingAgent()
 
     for epd in range(epds):
         obs = env.reset()

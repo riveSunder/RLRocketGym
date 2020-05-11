@@ -19,8 +19,8 @@ import skimage.io
 if __name__ == "__main__":
 
     env = BoosterBackEnv()
-    epds = 4
-    pop_size = 128
+    epds = 8
+    pop_size = 64 
     cell_dim = [16,16]
 
     agent_fn = LSTMAgent
@@ -31,8 +31,10 @@ if __name__ == "__main__":
     population = CMAPopulation(agent_fn, env, population_size=pop_size, agent_args=agent_args)
     print("policy params: {}".format(population.population[0].num_parameters))
 
+
+    
     try:
-        population.train(generations=200, epds=epds)
+        population.train(generations=1000, epds=epds)
     except KeyboardInterrupt:
         pass
     import pdb; pdb.set_trace();
